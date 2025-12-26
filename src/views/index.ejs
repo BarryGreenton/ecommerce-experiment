@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>商品列表 - 电子商务网站实验</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">电商实验</a>
+        <div class="collapse navbar-collapse">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link active" href="/">商品列表</a>
+            </li>
+            <% if (user) { %>
+            <li class="nav-item">
+              <a class="nav-link" href="/cart">购物车</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/orders">我的订单</a>
+            </li>
+            <% } %>
+            <% if (user && user.role === 'admin') { %>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/products">商品管理</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/orders">订单管理</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/customers">客户管理</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/logs">浏览/购买日志</a>
+            </li>
+            <% } %>
+          </ul>
+          <ul class="navbar-nav">
+            <% if (user) { %>
+            <li class="nav-item">
+              <span class="navbar-text me-2">你好，<%= user.username %></span>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/logout">注销</a>
+            </li>
+            <% } else { %>
+            <li class="nav-item">
+              <a class="nav-link" href="/login">登录</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/register">注册</a>
+            </li>
+            <% } %>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <h1 class="mb-3">商品列表</h1>
+
+      <% if (!products.length) { %>
+      <p>目前还没有商品，请联系管理员添加。</p>
+      <% } else { %>
+      <div class="row">
+        <% products.forEach(p => { %>
+        <div class="col-md-4 mb-3">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title"><%= p.name %></h5>
+              <p class="card-text"><%= p.description || '暂无描述' %></p>
+              <p class="card-text text-danger">￥<%= p.price.toFixed(2) %></p>
+              <p class="card-text">库存：<%= p.stock %></p>
+              <% if (user) { %>
+              <form method="post" action="/cart/add/<%= p.id %>">
+                <button class="btn btn-primary" type="submit">加入购物车</button>
+              </form>
+              <% } else { %>
+              <a class="btn btn-outline-primary" href="/login">登录后购买</a>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+      <% } %>
+    </div>
+  </body>
+</html>
+
+
+
