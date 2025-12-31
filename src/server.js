@@ -81,11 +81,17 @@ if (!emailAuthCode) {
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.qq.com',
-  port: 465,
-  secure: true, // 使用 SSL
+  port: 587, // 改用 587 端口（TLS），通常比 465 更稳定
+  secure: false, // 587 端口使用 STARTTLS，不是直接 SSL
   auth: {
     user: '2769136843@qq.com',
     pass: emailAuthCode
+  },
+  connectionTimeout: 60000, // 连接超时 60 秒
+  greetingTimeout: 30000, // 问候超时 30 秒
+  socketTimeout: 60000, // Socket 超时 60 秒
+  tls: {
+    rejectUnauthorized: false // 允许自签名证书（某些环境需要）
   }
 });
 
