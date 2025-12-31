@@ -72,10 +72,16 @@ app.use(
   })
 );
 
-// 简单邮件发送配置（实验用，可按需改为真实 SMTP）
+// QQ 邮箱 SMTP 配置
+// 注意：需要在 QQ 邮箱设置中获取授权码，并设置为环境变量 QQ_EMAIL_AUTH_CODE
 const transporter = nodemailer.createTransport({
-  // 实验环境使用 jsonTransport，实际部署时可改为 QQ 邮箱 SMTP 等
-  jsonTransport: true
+  host: 'smtp.qq.com',
+  port: 465,
+  secure: true, // 使用 SSL
+  auth: {
+    user: '2769136843@qq.com',
+    pass: process.env.QQ_EMAIL_AUTH_CODE || '' // 从环境变量读取授权码
+  }
 });
 
 // 统一渲染提示页
@@ -268,22 +274,27 @@ app.post('/checkout', requireLogin, (req, res) => {
   req.session.cart = {};
   logAction(req.session.user.id, 'checkout', `下单订单 ${orderId}`);
 
-  // 发送“确认收货”邮件（实验用：控制台输出 JSON）
+  // 发送“确认收货”邮件
   const user = db
     .prepare('SELECT * FROM users WHERE id = ?')
     .get(req.session.user.id);
   if (user && user.email) {
     transporter.sendMail(
       {
-        // 按要求使用管理员邮箱作为发件人
         from: '2769136843@qq.com',
         to: user.email,
         subject: `订单确认 - #${orderId}`,
-        text: `您的订单 #${orderId} 已付款，总金额：${total.toFixed(
+        text: `您的订单 #${orderId} 已付款，总金额：￥${total.toFixed(
           2
-        )}，请登录网站查看订单详情。`
+        )}，请登录网站查看订单详情。\n\n感谢您的购买！`
       },
-      () => {}
+      (error, info) => {
+        if (error) {
+          console.error('邮件发送失败:', error);
+        } else {
+          console.log('邮件发送成功:', info.messageId);
+        }
+      }
     );
   }
 
