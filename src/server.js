@@ -74,13 +74,18 @@ app.use(
 
 // QQ 邮箱 SMTP 配置
 // 注意：需要在 QQ 邮箱设置中获取授权码，并设置为环境变量 QQ_EMAIL_AUTH_CODE
+const emailAuthCode = process.env.QQ_EMAIL_AUTH_CODE || '';
+if (!emailAuthCode) {
+  console.warn('警告: QQ_EMAIL_AUTH_CODE 环境变量未设置，邮件功能将无法使用');
+}
+
 const transporter = nodemailer.createTransport({
   host: 'smtp.qq.com',
   port: 465,
   secure: true, // 使用 SSL
   auth: {
     user: '2769136843@qq.com',
-    pass: process.env.QQ_EMAIL_AUTH_CODE || '' // 从环境变量读取授权码
+    pass: emailAuthCode
   }
 });
 
@@ -278,24 +283,37 @@ app.post('/checkout', requireLogin, (req, res) => {
   const user = db
     .prepare('SELECT * FROM users WHERE id = ?')
     .get(req.session.user.id);
+  
+  console.log(`[邮件] 检查用户邮箱 - 用户ID: ${req.session.user.id}, 邮箱: ${user ? user.email : '未找到用户'}`);
+  
   if (user && user.email) {
-    transporter.sendMail(
-      {
-        from: '2769136843@qq.com',
-        to: user.email,
-        subject: `订单确认 - #${orderId}`,
-        text: `您的订单 #${orderId} 已付款，总金额：￥${total.toFixed(
-          2
-        )}，请登录网站查看订单详情。\n\n感谢您的购买！`
-      },
-      (error, info) => {
-        if (error) {
-          console.error('邮件发送失败:', error);
-        } else {
-          console.log('邮件发送成功:', info.messageId);
+    if (!emailAuthCode) {
+      console.error('[邮件] 错误: QQ_EMAIL_AUTH_CODE 环境变量未设置，无法发送邮件');
+    } else {
+      console.log(`[邮件] 准备发送邮件到: ${user.email}, 订单号: ${orderId}`);
+      transporter.sendMail(
+        {
+          from: '2769136843@qq.com',
+          to: user.email,
+          subject: `订单确认 - #${orderId}`,
+          text: `您的订单 #${orderId} 已付款，总金额：￥${total.toFixed(
+            2
+          )}，请登录网站查看订单详情。\n\n感谢您的购买！`
+        },
+        (error, info) => {
+          if (error) {
+            console.error('[邮件] 发送失败:', error.message);
+            console.error('[邮件] 详细错误:', error);
+          } else {
+            console.log('[邮件] 发送成功!');
+            console.log('[邮件] 消息ID:', info.messageId);
+            console.log('[邮件] 响应:', info.response);
+          }
         }
-      }
-    );
+      );
+    }
+  } else {
+    console.log('[邮件] 跳过发送: 用户未填写邮箱');
   }
 
   res.redirect('/orders');
